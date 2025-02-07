@@ -8,12 +8,12 @@ vim.opt.shiftwidth = 4
 vim.opt.relativenumber = true
 vim.opt.clipboard = "unnamedplus"
 
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "netrw",
-	callback = function()
-		vim.api.nvim_buf_set_keymap(0, "n", "a", "%:call netrw#NetrwBrowseX('%')", { noremap = true, silent = true })
-	end,
-})
+-- vim.api.nvim_create_autocmd("FileType", {
+-- 	pattern = "netrw",
+-- 	callback = function()
+-- 		vim.api.nvim_buf_set_keymap(0, "n", "a", "%:call netrw#NetrwBrowseX('%')", { noremap = true, silent = true })
+-- 	end,
+-- })
 
 -- vim.g.maplocalleader = "\\"
 
@@ -76,7 +76,7 @@ require("lazy").setup({
 		{ "m4xshen/autoclose.nvim" },
 	},
 	-- automatically check for plugin updates
-	checker = { enabled = true },
+	checker = { enabled = false },
 })
 
 local builtin = require("telescope.builtin")
@@ -215,3 +215,9 @@ vim.keymap.set(
 )
 
 require("autoclose").setup()
+
+vim.api.nvim_create_user_command("Reload", function()
+	local cursor_position = vim.api.nvim_win_get_cursor(0)
+	vim.cmd("edit!")
+	vim.api.nvim_win_set_cursor(0, cursor_position)
+end, {})
