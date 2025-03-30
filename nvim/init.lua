@@ -93,7 +93,20 @@ vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
 ---@diagnostic disable-next-line: missing-fields
 require("nvim-treesitter.configs").setup({
 	-- A list of parser names, or "all" (the listed parsers MUST always be installed)
-	ensure_installed = { "lua", "markdown", "markdown_inline", "javascript", "typescript", "go", "html", "css", "rust" },
+	ensure_installed = {
+		"lua",
+		"markdown",
+		"markdown_inline",
+		"javascript",
+		"typescript",
+		"go",
+		"html",
+		"css",
+		"rust",
+		"yaml",
+		"scala",
+		"python",
+	},
 
 	-- Install parsers synchronously (only applied to `ensure_installed`)
 	sync_install = false,
@@ -137,7 +150,7 @@ cmp.setup({
 
 require("mason").setup()
 require("mason-lspconfig").setup({
-	ensure_installed = { "lua_ls", "tailwindcss", "ts_ls", "gopls", "html", "cssls", "rust_analyzer" },
+	ensure_installed = { "lua_ls", "ts_ls", "gopls", "html", "cssls", "rust_analyzer", "basedpyright" },
 	automatic_installation = true,
 })
 
@@ -158,7 +171,7 @@ require("lspconfig")["lua_ls"].setup({
 	},
 })
 
-local servers_with_defaults = { "rust_analyzer", "ts_ls", "tailwindcss", "gopls", "html", "cssls" }
+local servers_with_defaults = { "rust_analyzer", "ts_ls", "gopls", "html", "cssls" }
 
 for _, server in ipairs(servers_with_defaults) do
 	require("lspconfig")[server].setup({
@@ -173,8 +186,10 @@ require("conform").setup({
 		typescript = { "prettier" },
 		html = { "prettier" },
 		css = { "prettier" },
+		yaml = { "prettier" },
 		go = { "gofumpt" },
 		rust = { "rust-analyzer" },
+		cpp = { "clang-format" },
 	},
 	format_on_save = {
 		-- These options will be passed to conform.format()
