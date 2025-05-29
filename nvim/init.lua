@@ -3,6 +3,7 @@ vim.keymap.set("n", "<leader>e", vim.cmd.Ex)
 vim.keymap.set("n", "<leader>b", "<C-^>", { desc = "Jump to previous buffer" })
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show diagnostic message" })
 vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.relativenumber = true
@@ -106,6 +107,7 @@ require("nvim-treesitter.configs").setup({
 		"yaml",
 		"scala",
 		"python",
+		"terraform",
 	},
 
 	-- Install parsers synchronously (only applied to `ensure_installed`)
@@ -179,6 +181,22 @@ for _, server in ipairs(servers_with_defaults) do
 	})
 end
 
+require("lspconfig")["basedpyright"].setup({
+	capabilities = capabilities,
+	settings = {
+		python = {
+			analysis = {
+				typeCheckingMode = "basic",
+				diagnosticMode = "workspace",
+				inlayHints = {
+					variableTypes = true,
+					functionReturnTypes = true,
+				},
+			},
+		},
+	},
+})
+
 require("conform").setup({
 	formatters_by_ft = {
 		lua = { "stylua" },
@@ -190,10 +208,15 @@ require("conform").setup({
 		go = { "gofumpt" },
 		rust = { "rust-analyzer" },
 		cpp = { "clang-format" },
+		python = { "isort", "black" },
+	},
+	formatters = {
+		black = {
+			prepend_args = { "--fast", "--target-version", "py311" },
+		},
 	},
 	format_on_save = {
-		-- These options will be passed to conform.format()
-		timeout_ms = 500,
+		timeout_ms = 5000,
 		lsp_format = "fallback",
 	},
 })
@@ -216,3 +239,6 @@ vim.api.nvim_create_user_command("Reload", function()
 	vim.cmd("edit!")
 	vim.api.nvim_win_set_cursor(0, cursor_position)
 end, {})
+
+-- vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostics list" })
+
