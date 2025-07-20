@@ -4,8 +4,10 @@ vim.keymap.set("n", "<leader>b", "<C-^>", { desc = "Jump to previous buffer" })
 vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show diagnostic message" })
+vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename)
 vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
+vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.clipboard = "unnamedplus"
 
@@ -27,7 +29,7 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 	if vim.v.shell_error ~= 0 then
 		vim.api.nvim_echo({
 			{ "Failed to clone lazy.nvim:\n", "ErrorMsg" },
-			{ out, "WarningMsg" },
+			{ out,                            "WarningMsg" },
 			{ "\nPress any key to exit..." },
 		}, true, {})
 		vim.fn.getchar()
@@ -108,6 +110,7 @@ require("nvim-treesitter.configs").setup({
 		"scala",
 		"python",
 		"terraform",
+		"cpp"
 	},
 
 	-- Install parsers synchronously (only applied to `ensure_installed`)
@@ -139,7 +142,7 @@ cmp.setup({
 		["<C-b>"] = cmp.mapping.scroll_docs(-4),
 		["<C-f>"] = cmp.mapping.scroll_docs(4),
 		["<C-Space>"] = cmp.mapping.complete(),
-		["<C-e>"] = cmp.mapping.abort(),
+		["<-e>"] = cmp.mapping.abort(),
 		["<CR>"] = cmp.mapping.confirm({ select = true }),
 	}),
 	sources = cmp.config.sources({
@@ -152,9 +155,11 @@ cmp.setup({
 
 require("mason").setup()
 require("mason-lspconfig").setup({
-	ensure_installed = { "lua_ls", "ts_ls", "gopls", "html", "cssls", "rust_analyzer", "basedpyright" },
+	ensure_installed = { "lua_ls", "ts_ls", "gopls", "html", "cssls", "rust_analyzer", "clangd" },
 	automatic_installation = true,
+	automatic_enable = true,
 })
+-- I also like to have basedpyright installed but I do it manually with uv
 
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
@@ -173,29 +178,13 @@ require("lspconfig")["lua_ls"].setup({
 	},
 })
 
-local servers_with_defaults = { "rust_analyzer", "ts_ls", "gopls", "html", "cssls" }
+local servers_with_defaults = { "rust_analyzer", "ts_ls", "gopls", "html", "cssls", "basedpyright", "clangd" }
 
 for _, server in ipairs(servers_with_defaults) do
 	require("lspconfig")[server].setup({
 		capabilities = capabilities,
 	})
 end
-
-require("lspconfig")["basedpyright"].setup({
-	capabilities = capabilities,
-	settings = {
-		python = {
-			analysis = {
-				typeCheckingMode = "basic",
-				diagnosticMode = "workspace",
-				inlayHints = {
-					variableTypes = true,
-					functionReturnTypes = true,
-				},
-			},
-		},
-	},
-})
 
 require("conform").setup({
 	formatters_by_ft = {
@@ -207,12 +196,12 @@ require("conform").setup({
 		yaml = { "prettier" },
 		go = { "gofumpt" },
 		rust = { "rust-analyzer" },
-		cpp = { "clang-format" },
 		python = { "isort", "black" },
+		cpp = { "clang-format" }
 	},
 	formatters = {
 		black = {
-			prepend_args = { "--fast", "--target-version", "py311" },
+			prepend_args = { "--fast", "--target-version", "py312" },
 		},
 	},
 	format_on_save = {
@@ -240,5 +229,70 @@ vim.api.nvim_create_user_command("Reload", function()
 	vim.api.nvim_win_set_cursor(0, cursor_position)
 end, {})
 
--- vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostics list" })
+local function disable_lsp()
+	local clients = vim.lsp.get_clients({ bufnr = 0 })
+	if #clients > 0 then
+		for _, client in ipairs(clients) do
+			vim.lsp.stop_client(client.id)
+		end
+		print("LSP disabled for current buffer")
+	end
+end
 
+vim.api.nvim_create_user_command("DisableLSP", disable_lsp, {})
+
+local ls = require("luasnip")
+local s = ls.snippet
+local t = ls.text_node
+local i = ls.insert_node
+
+ls.add_snippets("typst", {
+	s("act", {
+		t("#action["),
+		t({ "", "  " }),
+		i(0, "action"),
+		t({ "", "]" }),
+	}),
+	s("dia", {
+		t("#dialogue_block["),
+		t({ "", "  " }),
+		i(0),
+		t({ "", "]" }),
+	}),
+	s("sce", {
+		t("#scene(\""),
+		i(0, "scene"),
+		t({ "\")" }),
+	}),
+	s("lin", {
+		t("#line["),
+		i(0, "line"),
+		t({ "]" }),
+	}),
+	s("cha", {
+		t("#character(\""),
+		i(0, "character"),
+		t({ "\")" }),
+	}),
+	s("par", {
+		t("#parenthetical(\""),
+		i(0, "parenthetical"),
+		t({ "\")" }),
+	}),
+	s("start", {
+		t("#import \"template.typ\": *"),
+		t({ "", "" }),
+		t({ "", "" }),
+		t("#show: screenplay.with("),
+		t({ "", "  title: \"" }),
+		i(0, "title"),
+		t("\""),
+		t({ "", ")" }),
+	}),
+})
+
+vim.keymap.set("i", "<C-k>", function()
+	if ls.expand_or_jumpable() then
+		ls.expand_or_jump()
+	end
+end, { silent = true })
